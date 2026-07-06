@@ -274,7 +274,7 @@
     <section id="noticias" class="tab-content">
       <div class="card">
         <h2>Últimas Noticias y Comunidad</h2>
-        <p style="margin-bottom: 25px;">Mantente al día con lo que pasa en nuestra institution. Espacio interactivo editable visible globalmente en internet.</p>
+        <p style="margin-bottom: 25px;">Mantente al día con lo que pasa en nuestra institución. Espacio interactivo editable visible globalmente en internet.</p>
         
         <div class="docente-zone">
           <h3>📰 Publicar Nueva Noticia o Enlace Global</h3>
@@ -340,14 +340,14 @@
 
   <script>
     // ========================================================
-    // ⚙️ CONFIGURACIÓN INTEGRADA URLS ACTUALIZADAS
+    // ⚙️ CONFIGURACIÓN INTEGRADA URLS ACTUALIZADAS (SIN CONTRASEÑA VISIBLE)
     // ========================================================
     const API_KEY = 'AIzaSyAIaJex82-XL3aYs7kAONMCA7l16qXyVYo'; 
     const FOLDER_ID = '10I48IkJZhSZCRM43fKzN3Nj8iUGcSGe3';
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwlcFNq-RWAMh_8uOiZbkGwQR_WGs2Q3SMt1harjwINF8VlD2CVnLzfV7scxUT0IC-Zcg/exec';
     
-    const CLAVE_ADMIN = "INEASAGU2026"; 
     let isAdmin = false;
+    let tokenClaveMemoria = ""; // Almacena temporalmente la clave solo mientras el usuario usa la web
 
     document.getElementById('year').textContent = new Date().getFullYear();
 
@@ -376,25 +376,47 @@
       }, 4000);
     }
 
-    // MODO ADMINISTRADOR (ACCESO DOCENTE GLOBAL)
-    function toggleAdminMode() {
+    // MODO ADMINISTRADOR MEJORADO (VALIDACIÓN REMOTA SEGURA)
+    async function toggleAdminMode() {
       if (!isAdmin) {
-        const password = prompt("Ingrese la contraseña de personal authorized:");
-        if (password === CLAVE_ADMIN) {
-          isAdmin = true;
-          document.body.classList.add('admin-enabled');
-          document.getElementById('authBtn').textContent = "🔒 Cerrar Sesión";
-          document.getElementById('authBtn').style.backgroundColor = "#dc3545";
-          alert("¡Acceso concedido! Ahora puede subir proyectos y gestionar noticias globales.");
-        } else if (password !== null) {
-          alert("Contraseña incorrecta.");
+        const password = prompt("Ingrese la contraseña de personal autorizado:");
+        if (password === null) return; // Cancelado
+
+        const authBtn = document.getElementById('authBtn');
+        authBtn.textContent = "⏳ Verificando...";
+        authBtn.disabled = true;
+
+        try {
+          // Consultamos directamente al servidor de Google sin tener la contraseña grabada aquí
+          const response = await fetch(`${SCRIPT_URL}?checkClave=${encodeURIComponent(password)}`);
+          const resultado = await response.json();
+
+          if (resultado.autorizado === true) {
+            isAdmin = true;
+            tokenClaveMemoria = password; // Guardado temporal en memoria dinámica
+            document.body.classList.add('admin-enabled');
+            authBtn.textContent = "🔒 Cerrar Sesión";
+            authBtn.style.backgroundColor = "#dc3545";
+            alert("¡Acceso concedido de forma segura! Ahora puede gestionar el portal.");
+          } else {
+            alert("Contraseña incorrecta. Acceso denegado.");
+            authBtn.textContent = "🔑 Acceso Docente";
+          }
+        } catch (error) {
+          console.error(error);
+          alert("Error de conexión al validar la clave institucional.");
+          authBtn.textContent = "🔑 Acceso Docente";
+        } finally {
+          authBtn.disabled = false;
         }
+
       } else {
         isAdmin = false;
+        tokenClaveMemoria = "";
         document.body.classList.remove('admin-enabled');
         document.getElementById('authBtn').textContent = "🔑 Acceso Docente";
         document.getElementById('authBtn').style.backgroundColor = "rgba(0,0,0,0.25)";
-        alert("Sesión cerrada.");
+        alert("Sesión cerrada de forma segura.");
       }
     }
 
@@ -452,14 +474,13 @@
         const btn = document.getElementById(`btn-del-file-${id}`);
         const textoOriginal = btn.innerHTML;
 
-        // Cambiar estado visual del botón inmediatamente
         btn.disabled = true;
         btn.innerHTML = "⏳ Eliminando... por favor espere";
 
         const paqueteBorrarProyecto = {
           action: "deleteFile",
           id: id,
-          clave: CLAVE_ADMIN
+          clave: tokenClaveMemoria // Se envía de forma dinámica
         };
 
         fetch(SCRIPT_URL, {
@@ -517,7 +538,7 @@
           type: file.type,
           name: document.getElementById('driveFileName').value || file.name,
           description: document.getElementById('driveFileDesc').value,
-          clave: CLAVE_ADMIN 
+          clave: tokenClaveMemoria 
         };
 
         fetch(SCRIPT_URL, {
@@ -619,7 +640,7 @@
         link: document.getElementById('newsLink').value,
         img: document.getElementById('newsImg').value,
         desc: document.getElementById('newsDesc').value,
-        clave: CLAVE_ADMIN
+        clave: tokenClaveMemoria
       };
 
       fetch(SCRIPT_URL, {
@@ -647,14 +668,13 @@
         const btn = document.getElementById(`btn-del-news-${id}`);
         const textoOriginal = btn.innerHTML;
 
-        // Cambiar estado visual del botón inmediatamente
         btn.disabled = true;
         btn.innerHTML = "⏳ Eliminando... por favor espere";
 
         const paqueteBorrar = {
           action: "deleteNews",
           id: id,
-          clave: CLAVE_ADMIN
+          clave: tokenClaveMemoria
         };
 
         fetch(SCRIPT_URL, {
